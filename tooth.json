@@ -14,7 +14,7 @@
   },
   "variants": [
     {
-      "label": "",
+      "label": "server",
       "platform": "win-x64",
       "dependencies": {
         "github.com/LiteLDev/LeviLamina": "1.4.*"
