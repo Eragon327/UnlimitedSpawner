@@ -1,15 +1,17 @@
 #include "UnlimitedSpawner.h"
+#include "Config.h"
+#include <ll/api/Config.h>
 #include "ll/api/mod/RegisterHelper.h"
 #include "ll/api/memory/Hook.h"
 #include "mc/world/level/Spawner.h"
+#include <algorithm>
 
 using namespace ll::memory_literals;
-
-#define MAX_COUNT 200
 
 namespace unlimited_spawner {
 namespace {
 auto& logger = UnlimitedSpawner::getInstance().getSelf().getLogger();
+Config config;
 }
 
 LL_AUTO_TYPE_INSTANCE_HOOK(
@@ -24,8 +26,8 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
 ) {
     origin(mobDatas, conditions, spawnCount);
     int currentCount = *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 0x220);
-    if (currentCount + spawnCount > MAX_COUNT) {
-        return std::max(0, MAX_COUNT - currentCount);
+    if (currentCount + spawnCount > config.maxCount) {
+        return std::max(0, config.maxCount - currentCount);
     } else {
         return spawnCount;
     }
@@ -36,9 +38,22 @@ UnlimitedSpawner& UnlimitedSpawner::getInstance() {
     return instance;
 }
 
-bool UnlimitedSpawner::load() { return true; }
+bool UnlimitedSpawner::load() {
+    const auto& configFilePath = getSelf().getConfigDir() / "config.json";
+    if (!ll::config::loadConfig(config, configFilePath)) {
+        getSelf().getLogger().warn("Cannot load configurations from {}", configFilePath);
+        getSelf().getLogger().info("Saving default configurations");
+
+        if (!ll::config::saveConfig(config, configFilePath)) {
+            getSelf().getLogger().error("Cannot save default configurations to {}", configFilePath);
+        }
+    }
+    return true;
+}
+
 bool UnlimitedSpawner::enable() { return true; }
 bool UnlimitedSpawner::disable() { return true; }
+bool UnlimitedSpawner::unload() { return true; }
 
 
 } // namespace unlimited_spawner
